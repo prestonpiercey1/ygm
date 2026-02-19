@@ -43,6 +43,7 @@ class comm_stats {
     m_iallreduce_count           = 0;
     m_waitsome_iallreduce_time   = 0.0f;
     m_waitsome_iallreduce_count  = 0;
+    m_barrier_count              = 0;
     m_time_start                 = MPI_Wtime();
   }
 
@@ -75,6 +76,8 @@ class comm_stats {
 
   double get_elapsed_time() const { return MPI_Wtime() - m_time_start; }
 
+  size_t get_barrier_count() const { return m_barrier_count; }
+
  private:
   void isend([[maybe_unused]] int dest, size_t bytes) {
     m_isend_count += 1;
@@ -97,6 +100,8 @@ class comm_stats {
   void irecv_test() { m_irecv_test_count += 1; }
 
   void iallreduce() { m_iallreduce_count += 1; }
+
+  void barrier() { m_barrier_count += 1; }
 
   timer waitsome_isend_irecv() {
     m_waitsome_isend_irecv_count += 1;
@@ -126,6 +131,8 @@ class comm_stats {
   size_t m_iallreduce_count          = 0;
   double m_waitsome_iallreduce_time  = 0.0f;
   size_t m_waitsome_iallreduce_count = 0;
+
+  size_t m_barrier_count = 0;
 
   double m_time_start = 0.0;
 };

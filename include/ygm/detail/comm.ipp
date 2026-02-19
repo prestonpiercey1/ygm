@@ -11,6 +11,10 @@
 #include <ygm/detail/ygm_ptr.hpp>
 #include <ygm/version.hpp>
 
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 namespace ygm {
 
 struct comm::header_t {
@@ -93,6 +97,20 @@ inline void comm::comm_setup(MPI_Comm c) {
     if (rank0()) m_tracer.create_directory();
     cf_barrier();
     m_tracer.open_file();
+  }
+
+  if (m_monitor_enabled) {
+    std::string uuid_str;
+    if (rank0()) {
+      boost::uuids::random_generator gen;
+      boost::uuids::uuid             uuid = gen();
+      uuid_str                            = boost::uuids::to_string(uuid);
+    }
+
+    uuid_str = mpi_bcast(uuid_str, 0, m_comm_other);
+
+    m_monitor.setup(m_layout.rank(), m_layout.size(), uuid_str,
+                    m_layout.local_id(), m_layout.local_ranks());
   }
 }
 
@@ -177,6 +195,21 @@ inline void comm::stats_print(const std::string &name, std::ostream &os) {
 
   if (rank0()) {
     os << sstr.str() << std::endl;
+  }
+}
+
+/**
+ * @brief Syncs current comm statistics to shared memory monitor.
+ *
+ * @details Called to update the shared memory segment in comm_monitor
+ * with current performance metrics. Only performs work if monitoring
+ * is enabled.
+ */
+inline void comm::sync_monitor() {
+  if (m_monitor_enabled && m_monitor.is_enabled()) {
+    m_monitor.sync(m_stats, m_pending_isend_bytes, m_send_local_buffer_bytes,
+                   m_send_remote_buffer_bytes, m_send_queue.size(),
+                   m_recv_queue.size());
   }
 }
 
@@ -423,6 +456,10 @@ inline void comm::barrier() {
   while (!full_barrier) {
     full_barrier = priv_barrier(true);
   }
+
+  m_stats.barrier();
+  sync_monitor();
+
   if (m_trace_ygm || m_trace_mpi) {
     m_tracer.trace_barrier_end(m_tracer.get_next_message_id(), m_send_count,
                                m_recv_count, m_pending_isend_bytes,

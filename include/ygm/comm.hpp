@@ -21,6 +21,7 @@
 #include <ygm/detail/meta/functional.hpp>
 #include <ygm/detail/mpi.hpp>
 #include <ygm/detail/tracer.hpp>
+#include <ygm/detail/comm_monitor.hpp>
 #include <ygm/detail/ygm_cereal_archive.hpp>
 #include <ygm/utility/world.hpp>
 
@@ -378,6 +379,8 @@ class comm {
 
   bool priv_barrier(bool is_full);
 
+  void sync_monitor();
+
   comm() = delete;
 
   comm(const comm &c) = delete;
@@ -420,6 +423,9 @@ class comm {
       detail::tracer(m_layout.size(), m_layout.rank(), config.trace_path);
   bool m_trace_ygm = config.trace_ygm;
   bool m_trace_mpi = config.trace_mpi;
+
+  bool                 m_monitor_enabled = config.monitor;
+  detail::comm_monitor m_monitor;
 
   detail::logger m_logger;
 
