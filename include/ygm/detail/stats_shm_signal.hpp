@@ -83,17 +83,22 @@ inline void chained_unlink_handler(int sig, siginfo_t* info,
 
   // Inform user of unlink only once from rank 0.
   if (rank[0] == '0' && rank[1] == '\0') {
-    constexpr char prefix_msg[] = "Caught signal ";
-    constexpr char suffix_msg[] = " in chained handler. Unlinked ygm shm segments.\n";
-    char signum[2] = {static_cast<char>(sig / 10 % 10 + '0'),
-                      static_cast<char>(sig % 10 + '0')};
-
-    // sizeof(msg)-1 for null term strings. Keeps byte count synced with msg length
-    // (void)! cast is warning supression; return not material if already in failure mode
-    (void)!write(STDOUT_FILENO, prefix_msg, sizeof(prefix_msg) - 1);
-    (void)!write(STDOUT_FILENO, signum, 2);
-    (void)!write(STDOUT_FILENO, suffix_msg, sizeof(suffix_msg) - 1);
+    
   }
+
+  printf("\n");
+  printf("%c\n", rank[0]);
+  printf("%c\n", rank[1]);
+  constexpr char prefix_msg[] = "Caught signal ";
+  constexpr char suffix_msg[] = " in chained handler. Unlinked ygm shm segments.\n";
+  char signum[2] = {static_cast<char>(sig / 10 % 10 + '0'),
+                    static_cast<char>(sig % 10 + '0')};
+
+  // sizeof(msg)-1 for null term strings. Keeps byte count synced with msg length
+  // (void)! cast is warning supression; return not material if already in failure mode
+  (void)!write(STDOUT_FILENO, prefix_msg, sizeof(prefix_msg) - 1);
+  (void)!write(STDOUT_FILENO, signum, 2);
+  (void)!write(STDOUT_FILENO, suffix_msg, sizeof(suffix_msg) - 1);
 
   // Forward to the previously installed handler.
   for (size_t i = 0; i < num_tracked_signals; ++i) {
