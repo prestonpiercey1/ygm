@@ -67,7 +67,7 @@ inline void chained_unlink_handler(int sig, siginfo_t* info,
   // Unlink segments that have been opened with paths from live_comm_uuids
   // Create substrate to copy path_ids onto
   char shm_path[64];
-  char rank[2];
+  char rank[2] = {'\0', '\0'};
 
   for (const std::string& path_id : ygm::detail::live_comm_uuids) {
     // Construct Desired String Format: <shm_prefix><path_id+"\0"><remaining_endspace>
@@ -77,28 +77,24 @@ inline void chained_unlink_handler(int sig, siginfo_t* info,
 
     shm_unlink(shm_path);
 
-    rank[0] = path_id[5];
-    rank[1] = path_id[6];
+    rank[0] = *(path_id.rbegin() + 1);
+    rank[1] = *(path_id.rbegin());
   }
 
   // Inform user of unlink only once from rank 0.
-  if (rank[0] == '0' && rank[1] == '\0') {
-    
+  if (rank[0] == '_' && rank[1] == '0') {
+    constexpr char prefix_msg[] = "Rank 0: Caught signal ";
+    constexpr char suffix_msg[] = " in chained handler, initiating unlink for ygm shm segments.\n";
+    char signum[2] = {static_cast<char>(sig / 10 % 10 + '0'),
+                      static_cast<char>(sig % 10 + '0')};
+
+    // sizeof(msg)-1 for null term strings. Keeps byte count synced with msg length
+    // (void)! cast is warning supression; return not material if already in failure mode
+    (void)!write(STDOUT_FILENO, prefix_msg, sizeof(prefix_msg) - 1);
+    (void)!write(STDOUT_FILENO, signum, 2);
+    (void)!write(STDOUT_FILENO, suffix_msg, sizeof(suffix_msg) - 1);
   }
-
-  printf("\n");
-  printf("%c\n", rank[0]);
-  printf("%c\n", rank[1]);
-  constexpr char prefix_msg[] = "Caught signal ";
-  constexpr char suffix_msg[] = " in chained handler. Unlinked ygm shm segments.\n";
-  char signum[2] = {static_cast<char>(sig / 10 % 10 + '0'),
-                    static_cast<char>(sig % 10 + '0')};
-
-  // sizeof(msg)-1 for null term strings. Keeps byte count synced with msg length
-  // (void)! cast is warning supression; return not material if already in failure mode
-  (void)!write(STDOUT_FILENO, prefix_msg, sizeof(prefix_msg) - 1);
-  (void)!write(STDOUT_FILENO, signum, 2);
-  (void)!write(STDOUT_FILENO, suffix_msg, sizeof(suffix_msg) - 1);
+  
 
   // Forward to the previously installed handler.
   for (size_t i = 0; i < num_tracked_signals; ++i) {
