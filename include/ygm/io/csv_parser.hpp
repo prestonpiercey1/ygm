@@ -132,7 +132,7 @@ class csv_parser : public ygm::container::detail::base_iteration_value<
   /**
    * @brief Returns an iterator to the first line of CSV assigned to this rank
    */
-  iterator begin() {
+  iterator begin() const {
     auto impl       = std::make_shared<iterator::impl>(m_header_map);
     impl->m_lp_iter = m_lp.begin();
     impl->m_current_line =
@@ -143,10 +143,7 @@ class csv_parser : public ygm::container::detail::base_iteration_value<
   /**
    * @brief Returns a past-the-end sentinel iterator
    */
-  iterator end() {
-    comm().barrier();
-    return iterator();
-  }
+  iterator end() const { return iterator(); }
 
  private:
   line_parser m_lp;

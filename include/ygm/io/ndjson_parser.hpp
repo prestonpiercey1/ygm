@@ -107,7 +107,7 @@ class ndjson_parser : public ygm::container::detail::base_iteration_value<
       ygm::io::line_parser::iterator m_lp_iter;
       boost::json::object            m_current_line;
       bool                           m_valid_line;
-      ndjson_parser                 *p_parser{nullptr};
+      const ndjson_parser           *p_parser{nullptr};
 
       impl() : m_current_line() {};
 
@@ -169,7 +169,7 @@ class ndjson_parser : public ygm::container::detail::base_iteration_value<
   /**
    * @brief Returns an iterator to the first line of CSV assigned to this rank
    */
-  iterator begin() {
+  iterator begin() const {
     m_num_invalid_records = 0;  // Reset to avoid over-reporting invalid lines
                                 // when reading multiple times
 
@@ -192,10 +192,7 @@ class ndjson_parser : public ygm::container::detail::base_iteration_value<
   /**
    * @brief Returns a past-the-end sentinel iterator
    */
-  iterator end() {
-    comm().barrier();
-    return iterator();
-  }
+  iterator end() const { return iterator(); }
 
   /*
    * @brief Get a count of the number of invalid JSON lines encountered during
@@ -210,7 +207,7 @@ class ndjson_parser : public ygm::container::detail::base_iteration_value<
  private:
   line_parser m_lp;
 
-  size_t m_num_invalid_records{0};
+  mutable size_t m_num_invalid_records{0};
 };
 
 }  // namespace ygm::io

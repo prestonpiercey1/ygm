@@ -197,7 +197,7 @@ class line_parser : public ygm::container::detail::base_iteration_value<
    * @brief Returns a lazy, single-pass iterator to the first line assigned
    * to this rank.
    */
-  iterator begin() {
+  iterator begin() const {
     partition_files();
     auto impl             = std::make_shared<iterator::impl>();
     impl->files           = &m_local_files;
@@ -209,10 +209,7 @@ class line_parser : public ygm::container::detail::base_iteration_value<
   /**
    * @brief Returns the past-the-end sentinel iterator.
    */
-  iterator end() {
-    comm().barrier();
-    return iterator();
-  }
+  iterator end() const { return iterator(); }
 
  private:
   /**
@@ -313,7 +310,7 @@ class line_parser : public ygm::container::detail::base_iteration_value<
     m_paths.erase(std::unique(m_paths.begin(), m_paths.end()), m_paths.end());
   }
 
-  void partition_files() {
+  void partition_files() const {
     m_local_files.clear();
 
     ygm::ygm_ptr<std::vector<std::tuple<fs::path, size_t, size_t>>>
@@ -462,10 +459,10 @@ class line_parser : public ygm::container::detail::base_iteration_value<
     return good;
   }
 
-  std::vector<std::tuple<fs::path, size_t, size_t>>   m_local_files;
-  ygm::comm&                                          m_comm;
-  std::vector<std::pair<fs::path, accessibility_tag>> m_paths;
-  bool                                                m_skip_first_line;
+  mutable std::vector<std::tuple<fs::path, size_t, size_t>> m_local_files;
+  ygm::comm&                                                m_comm;
+  std::vector<std::pair<fs::path, accessibility_tag>>       m_paths;
+  bool                                                      m_skip_first_line;
 };
 
 }  // namespace ygm::io
